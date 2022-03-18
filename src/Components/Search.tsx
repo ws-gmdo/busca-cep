@@ -1,14 +1,16 @@
 // Hooks
-import { useState }  from 'react';
+import { useState, useRef }  from 'react';
 
 // Axios
 import axios         from 'axios';
 
 // Primereact
-import { DataTable } from 'primereact/datatable';
+import { Card }      from 'primereact/card';
+import { Toast }     from 'primereact/toast';
 import { Column }    from 'primereact/column';
 import { Button }    from 'primereact/button';
-import {InputText}   from 'primereact/inputtext';
+import { DataTable } from 'primereact/datatable';
+import { InputMask } from 'primereact/inputmask';
 
 // Models
 import { Data }      from './../../models/data';
@@ -19,54 +21,91 @@ export function Search(){ // Function Component
 
     const [info, setInfo] = useState<Array<Data>>([]); // Infos da tabela
     const [history, setHistory] = useState(new Map()); // Histórico de ceps pesquisados
-    const [buttonDisabled, setButtonDisabled] = useState(false); // Bloquear botão
+    
+    const toast:any = useRef(null); // Toast de messagem de feedback da requisição
 
     const [cep, setCep] = useState(""); // CEP input
     const onChangeCep = (e: any) => {
         setCep(e.target.value);
     };
 
-    const onFormSubmit = (e: any) => {
+    const onFormSubmit = async (e: any) => {
         e.preventDefault();
 
-        let newInfo:any = history.get(cep);
+        const cepWithoutMask = cep.replace("-", "").replace(".", "");
+
+        // A princípio a requisição deu certo
+        let severityToast = "success";
+        let summaryToast  = "Requisição concluída";
+        let detailToast   = "CEP buscado com sucesso";
+
+        let newInfo:any = history.get(cepWithoutMask);
         
         if(newInfo != undefined){
-            setInfo(newInfo)
+            if(newInfo[0].erro){
+                severityToast = "error";
+                summaryToast  = "Erro na requisição";
+                detailToast   = "CEP consultado não foi encontrado na base de dados";
+            }
+
         }else{
-            const url = 'https://viacep.com.br/ws/' + cep + '/json';
-            axios({
+            
+            const url = 'https://viacep.com.br/ws/' + cepWithoutMask + '/json';
+            await axios({
                 method: 'get',
                 url: url
-            }).then( (response) => {
+            })
+            .then( (response) => {
+                if(response.data.erro){
+                    // Altera a mensagem de feedback
+                    severityToast = "error";
+                    summaryToast  = "Erro na requisição";
+                    detailToast   = "CEP consultado não foi encontrado na base de dados";
+                    
+                }else{
+                    // Adicionando um novo campo ao data
+                    response.data.erro = false;
+                }
+
                 newInfo = [response.data];
                 
+                // Atualiza o histórico
                 const _history = new Map(history);  // Copia o histórico para outro
-                
-                _history.set(cep, newInfo);  // Insere a busca no histórico cópia
+                    
+                _history.set(cepWithoutMask, newInfo);  // Insere a busca no histórico cópia
                 
                 setHistory(_history);       // Atualiza o histório original 
 
-                setInfo(newInfo);
             });
+
+            
         }
+
+        setInfo(newInfo);
+
+        // Mensagem de feedback
+        toast.current.show({
+            severity: severityToast, 
+            summary:  summaryToast, 
+            detail:   detailToast,
+            life: 3000
+        });
     }
 
     return (
-        <div className = "card p-5 m-5 shadow-5 border-50 border-round border-1" >
+        <Card className = "card p-5 m-5 shadow-5 border-50 border-round border-1" >
             <div className = "card-container  p-4">
                 <h1 className='text-primary font-semibold'>Busca CEP</h1>
                 <form onSubmit={onFormSubmit}>
                     <div className='p-field col flex'>
                     <span className = "p-input-icon-left">    
                         <i className = "pi pi-search"></i>
-                        <InputText className='p-inputtext inputfield w-full'
+                        <InputMask className='p-inputtext inputfield w-full'
                             id = "cep"
                             value={cep}
-                            placeholder = "Digite o CEP"
+                            placeholder = "99.999-999"
                             required
-                            minLength={8}
-                            maxLength={8}
+                            mask='99.999-999'
                             onChange={onChangeCep}
                         />
                     </span>
@@ -74,19 +113,18 @@ export function Search(){ // Function Component
                             label = 'Enviar'
                             icon  = 'pi pi-check'
                             type='submit'
-                            disabled={buttonDisabled}
+                            disabled={false}
                         />
                     </div>
                 </form>
             </div>
-            
             <div className="card-container m-auto">
                 <DataTable 
                     value={info} 
                     responsiveLayout = "stack"
-                    emptyMessage = "Sem registros.">
+                    emptyMessage = " ">
                     <Column field = "cep" header = "CEP"/>
-                    <Column field = "logadouro" header = "Logadouro"/>
+                    <Column field = "logradouro" header = "Logradouro"/>
                     <Column field = "complemento" header = "Complemento"/>
                     <Column field = "bairro" header = "Bairro"/>
                     <Column field = "localidade" header = "Localidade"/>
@@ -96,7 +134,8 @@ export function Search(){ // Function Component
                     <Column field = "ddd" header = "DDD"/>
                     <Column field = "siafi" header = "SIAFI"/>
                 </DataTable>
-            </div>
-        </div>
+            </div>       
+            <Toast ref={toast} className="primary"/>
+        </Card>
     );
 };
