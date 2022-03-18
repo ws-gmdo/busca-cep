@@ -1,41 +1,160 @@
-/*
-  Sobre importações:
-
-  Quando o arquivo é exportável por padrão, ou seja,
-  quando tiver um export *default* <nome> no final
-  do arquivo, então a importação será feita da seguinte
-  maneira: 
-              import <NOME> from '<local>'
-  
-  Quando o arquivo não é exportável por padrão, então a importação
-  fica da seguinte maneira:
-              import < {NOME} > from '<local>'
-  Sem um export default no módulo é necessário nomear explicitamente 
-  o que pretendemos importar usando a sintaxe de {}. 
-
-*/
-
+// Prime Themes
 import 'primeicons/primeicons.css';
 import 'primereact/resources/themes/md-light-deeppurple/theme.css';
 import 'primereact/resources/primereact.css';
 import 'primeflex/primeflex.css';
 import '/node_modules/primeflex/primeflex.css'
 
-import './App.css'
-import {Search} from './Components/Search'
-// TSX --> Arquivos TypeScript com JSX
-// TS  --> Arquivos TypeScript
+// Hooks
+import { useState, useRef }  from 'react';
 
+// Axios
+import axios         from 'axios';
+
+// Primereact
+import { Card }      from 'primereact/card';
+import { Toast }     from 'primereact/toast';
+import { Column }    from 'primereact/column';
+import { Button }    from 'primereact/button';
+import { DataTable } from 'primereact/datatable';
+import { InputMask } from 'primereact/inputmask';
+
+// Models
+import { Data }      from './../models/data';
 
 // Função principal onde todos os componentes serão renderizados
-function App() {
+function SearchCEP() {
   
+  const [info, setInfo] = useState<Array<Data>>([]); // Infos da tabela
+  const [history, setHistory] = useState(new Map()); // Histórico de ceps pesquisados
+  
+  const [buttonLoading, setButtonLoading] = useState(false);
+  const [buttonCheckIcon, setButtonCheckIcon] = useState("pi pi-check");
+
+  const toast:any = useRef(null); // Toast de messagem de feedback da requisição
+
+  const [cep, setCep] = useState(""); // CEP input
+  const onChangeCep = (e: any) => {
+      setCep(e.target.value);
+  };
+
+  const onFormSubmit = async (e: any) => {
+    e.preventDefault();
+
+    setButtonLoading(true);
+    setButtonCheckIcon("");
+    
+    const cepWithoutMask = cep.replace("-", "").replace(".", "");
+
+    // A princípio a requisição deu certo
+    let severityToast = "success";
+    let summaryToast  = "Requisição concluída";
+    let detailToast   = "CEP buscado com sucesso";
+
+    let newInfo:any = history.get(cepWithoutMask);
+    if(newInfo != undefined){
+      if(newInfo[0].erro){
+          severityToast = "error";
+          summaryToast  = "Erro na requisição";
+          detailToast   = "CEP consultado não foi encontrado na base de dados";
+      }
+
+    }else{
+          
+        const url = 'https://viacep.com.br/ws/' + cepWithoutMask + '/json';
+        await axios({
+            method: 'get',
+            url: url
+        })
+        .then( (response) => {
+            if(response.data.erro){
+                // Altera a mensagem de feedback
+                severityToast = "error";
+                summaryToast  = "Erro na requisição";
+                detailToast   = "CEP consultado não foi encontrado na base de dados";
+                
+            }else{
+                // Adicionando um novo campo ao data
+                response.data.erro = false;
+            }
+
+            newInfo = [response.data];
+            
+            // Atualiza o histórico
+            const _history = new Map(history);  // Copia o histórico para outro
+                
+            _history.set(cepWithoutMask, newInfo);  // Insere a busca no histórico cópia
+            
+            setHistory(_history);       // Atualiza o histório original 
+
+        })
+        .catch((error) => {
+            severityToast = "error";
+            summaryToast  = "Erro na requisição";
+            detailToast   = "Falha ao buscar CEP";
+            console.log(error);
+        });
+    }
+
+    setInfo(newInfo);
+    // setCep("");      // Limpa input
+    setButtonLoading(false);
+    setButtonCheckIcon("pi pi-check");
+
+    // Mensagem de feedback
+    toast.current.show({
+        severity: severityToast, 
+        summary:  summaryToast, 
+        detail:   detailToast,
+        life: 3000
+    });
+  }
+
   return (
-    <div className="App">  
-      <Search/>
-    </div>
+    <Card className = "card shadow-5 border-50 border-round border-1" >
+        <div className = "card-container  p-4">
+            <h1 className='text-primary font-semibold'>Busca CEP</h1>
+            <form onSubmit={onFormSubmit}>
+                <div className='p-field col flex'>
+                <span className = "p-input-icon-left">    
+                    <i className = "pi pi-search"></i>
+                    <InputMask className='p-inputtext inputfield w-full'
+                        id = "cep"
+                        value={cep}
+                        placeholder = "99.999-999"
+                        required
+                        mask='99.999-999'
+                        onChange={onChangeCep}
+                    />
+                </span>
+                    <Button className = "p-button-outlined  ml-4"
+                        label = 'Enviar'
+                        icon  = {buttonCheckIcon}
+                        loading = {buttonLoading}
+                        type='submit'
+                    />
+                </div>
+            </form>
+        </div>
+        <DataTable 
+            value={info} 
+            responsiveLayout = "stack"
+            emptyMessage = " ">
+            <Column field = "cep" header = "CEP"/>
+            <Column field = "logradouro" header = "Logradouro"/>
+            <Column field = "complemento" header = "Complemento"/>
+            <Column field = "bairro" header = "Bairro"/>
+            <Column field = "localidade" header = "Localidade"/>
+            <Column field = "uf" header = "UF"/>
+            <Column field = "ibge" header = "IBGE"/>
+            <Column field = "gia" header = "GIA"/>
+            <Column field = "ddd" header = "DDD"/>
+            <Column field = "siafi" header = "SIAFI"/>
+        </DataTable>
+        <Toast ref={toast} className="primary"/>
+    </Card>
   );
 }
 
 // Renderiza App() na tela do Browser
-export default App;
+export default SearchCEP;
