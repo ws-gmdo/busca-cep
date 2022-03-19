@@ -111,50 +111,51 @@ function SearchCEP() {
   }
 
   return (
-    <Card className = "card shadow-5 border-50 border-round border-1" >
-        <div className = "card-container  p-4">
-            <h1 className='text-primary font-semibold'>Busca CEP</h1>
-            <form onSubmit={onFormSubmit}>
-                <div className='p-field col flex'>
-                <span className = "p-input-icon-left">    
-                    <i className = "pi pi-search"></i>
-                    <InputMask className='p-inputtext inputfield w-full'
-                        id = "cep"
-                        value={cep}
-                        placeholder = "99.999-999"
-                        required
-                        mask='99.999-999'
-                        onChange={onChangeCep}
-                    />
-                </span>
-                    <Button className = "p-button-outlined  ml-4"
-                        label = 'Enviar'
-                        icon  = {buttonCheckIcon}
-                        loading = {buttonLoading}
-                        type='submit'
-                    />
-                </div>
-            </form>
-        </div>
-        <DataTable 
-            value={info} 
-            responsiveLayout = "stack"
-            emptyMessage = " ">
-            <Column field = "cep" header = "CEP"/>
-            <Column field = "logradouro" header = "Logradouro"/>
-            <Column field = "complemento" header = "Complemento"/>
-            <Column field = "bairro" header = "Bairro"/>
-            <Column field = "localidade" header = "Localidade"/>
-            <Column field = "uf" header = "UF"/>
-            <Column field = "ibge" header = "IBGE"/>
-            <Column field = "gia" header = "GIA"/>
-            <Column field = "ddd" header = "DDD"/>
-            <Column field = "siafi" header = "SIAFI"/>
-        </DataTable>
-        <Toast ref={toast} className="primary"/>
-    </Card>
+    <>
+        <Card className = "card shadow-5 border-50 border-round border-1" >
+            <div className = "card-container  p-4">
+                <h1 className='text-primary font-semibold'>Busca CEP</h1>
+                <form onSubmit={onFormSubmit}>
+                    <div className='sm:inline-flex'> 
+                        <span className = "p-input-icon-left block w-10rem">    
+                            <i className = "pi pi-search"></i>
+                            <InputMask className='p-inputtext inputfield w-full'
+                                id = "cep"
+                                value={cep}
+                                placeholder = "99.999-999"
+                                required
+                                mask='99.999-999'
+                                onChange={onChangeCep}
+                            />
+                        </span>
+                        <Button className = "p-button-outlined mt-3 block sm:ml-3 sm:mt-0"
+                            label = 'Enviar'
+                            icon  = {buttonCheckIcon}
+                            loading = {buttonLoading}
+                            type='submit'
+                        />
+                    </div>
+                </form>
+            </div>
+            <DataTable 
+                value={info} 
+                responsiveLayout = "stack"
+                emptyMessage = " ">
+                <Column field = "cep" header = "CEP"/>
+                <Column field = "logradouro" header = "Logradouro"/>
+                <Column field = "complemento" header = "Complemento"/>
+                <Column field = "bairro" header = "Bairro"/>
+                <Column field = "localidade" header = "Localidade"/>
+                <Column field = "uf" header = "UF"/>
+                <Column field = "ibge" header = "IBGE"/>
+                <Column field = "gia" header = "GIA"/>
+                <Column field = "ddd" header = "DDD"/>
+                <Column field = "siafi" header = "SIAFI"/>
+            </DataTable>
+            <Toast ref={toast} className="primary"/>
+        </Card>
+    </>
   );
 }
 
-// Renderiza App() na tela do Browser
 export default SearchCEP;
