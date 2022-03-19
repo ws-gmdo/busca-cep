@@ -15,8 +15,8 @@
     # Clone este repositório
     $ git clone https://github.com/ws-ksda/busca-cep
 
-    # Acesse a pasta do projeto no terminal/cmd
-    $ cd ccfweb
+    # Acesse a pasta do projeto
+    $ cd busca-cep
     
     # Instale as dependências
     $ npm install
