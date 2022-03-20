@@ -8,8 +8,8 @@ import '/node_modules/primeflex/primeflex.css'
 // Hooks
 import { useState, useRef }  from 'react';
 
-// Axios
-import axios         from 'axios';
+// Serviço de requisição via Axios
+import SearchCepService from "./services/search-cep-service";
 
 // Primereact
 import { Card }      from 'primereact/card';
@@ -26,7 +26,7 @@ import { Data }      from './../models/data';
 function SearchCEP() {
   
   const [info, setInfo] = useState<Array<Data>>([]); // Infos da tabela
-  const [history, setHistory] = useState(new Map()); // Histórico de ceps pesquisados
+  const [historic, setHistoric] = useState(new Map()); // Histórico de ceps pesquisados
   
   const [buttonLoading, setButtonLoading] = useState(false);
   const [buttonCheckIcon, setButtonCheckIcon] = useState("pi pi-check");
@@ -51,7 +51,8 @@ function SearchCEP() {
     let summaryToast  = "Requisição concluída";
     let detailToast   = "CEP buscado com sucesso";
 
-    let newInfo:any = history.get(cepWithoutMask);
+    // Verifica se já está no mapa
+    let newInfo:any = historic.get(cepWithoutMask);
     if(newInfo != undefined){
       if(newInfo[0].erro){
           severityToast = "error";
@@ -59,45 +60,33 @@ function SearchCEP() {
           detailToast   = "CEP consultado não foi encontrado na base de dados";
       }
 
-    }else{
+    }else{ // Se não tiver no mapa, faz nova requisição
           
-        const url = 'https://viacep.com.br/ws/' + cepWithoutMask + '/json';
-        await axios({
-            method: 'get',
-            url: url
-        })
-        .then( (response) => {
-            if(response.data.erro){
-                // Altera a mensagem de feedback
-                severityToast = "error";
-                summaryToast  = "Erro na requisição";
-                detailToast   = "CEP consultado não foi encontrado na base de dados";
-                
-            }else{
-                // Adicionando um novo campo ao data
-                response.data.erro = false;
-            }
+        const serviceCep = new SearchCepService();
+        const response = await serviceCep.getInfoCep(cepWithoutMask);
 
-            newInfo = [response.data];
-            
-            // Atualiza o histórico
-            const _history = new Map(history);  // Copia o histórico para outro
-                
-            _history.set(cepWithoutMask, newInfo);  // Insere a busca no histórico cópia
-            
-            setHistory(_history);       // Atualiza o histório original 
-
-        })
-        .catch((error) => {
+        if(response.erro){
+            // Altera a mensagem de feedback
             severityToast = "error";
             summaryToast  = "Erro na requisição";
-            detailToast   = "Falha ao buscar CEP";
-            console.log(error);
-        });
+            detailToast   = "CEP consultado não foi encontrado na base de dados";
+            
+        }else{
+            // Adicionando um novo campo ao data
+            response.erro = false;
+        }
+
+        // DataTable recebe um array, então transformo a resposta num Array
+        newInfo = [response]; 
+        
+        // Atualiza o histórico
+        const _historic = new Map(historic);  // Copia o histórico para outro            
+        _historic.set(cepWithoutMask, newInfo);  // Insere a busca no histórico cópia        
+        setHistoric(_historic);       // Atualiza o histório original 
+
     }
 
     setInfo(newInfo);
-    // setCep("");      // Limpa input
     setButtonLoading(false);
     setButtonCheckIcon("pi pi-check");
 
