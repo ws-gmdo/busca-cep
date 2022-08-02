@@ -1,0 +1,23 @@
+name: Encerra issues inativas
+on:
+  workflow-dispatch:
+  schedule:
+    - cron: "30 1 * * *"
+
+jobs:
+  close-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v5
+        with:
+          days-before-issue-stale: 1
+          days-before-issue-close: 1
+          stale-issue-label: "stale"
+          stale-issue-message: "Esta issue está desatualizada porque está aberta há 30 dias sem atividade."
+          close-issue-message: "Esta issue foi encerrada porque ficou inativa por 14 dias desde que foi marcada como obsoleta."
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
