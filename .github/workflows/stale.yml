@@ -1,6 +1,5 @@
 name: Encerra issues inativas
 on:
-  workflow-dispatch:
   schedule:
     - cron: "30 1 * * *"
 
