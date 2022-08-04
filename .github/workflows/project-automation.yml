@@ -20,4 +20,4 @@ jobs:
         with:
           project: busca cep's backlog
           column: New
-          repo-token: ${{ secrets.github-token }}
+          repo-token: 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
